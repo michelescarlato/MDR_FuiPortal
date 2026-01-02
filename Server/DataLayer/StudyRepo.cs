@@ -287,16 +287,16 @@ public class StudyRepo : IStudyRepo
             string scope_string = "";
             if (search_scope == 1)
             { 
-                scope_string = $" (tt_lex @@ to_tsquery('core.mdr_english_config2', '{search_pars}')) ";
+                scope_string = $" (tt_lex @@ to_tsquery('english', '{search_pars}')) ";
             }
             else if (search_scope == 2)
             {
-                scope_string = $" (conditions_lex @@ to_tsquery('core.mdr_english_config2', '{search_pars}')) ";
+                scope_string = $" (conditions_lex @@ to_tsquery('english', '{search_pars}')) ";
             }
             else if (search_scope == 3)
             {
-                scope_string = $@"  (  (tt_lex @@ to_tsquery('core.mdr_english_config2', '{search_pars}')) 
-                                 OR    (conditions_lex @@ to_tsquery('core.mdr_english_config2', '{search_pars}')) ) ";
+                scope_string = $@"  (  (tt_lex @@ to_tsquery('english', '{search_pars}')) 
+                                 OR    (conditions_lex @@ to_tsquery('english', '{search_pars}')) ) ";
             }
             prior_clause_added = true;
             sql_where_clauses += scope_string;
@@ -860,17 +860,17 @@ public class StudyRepo : IStudyRepo
         {
             if (search_scope == 1)
             {
-                scope_string = $" AND (tt_lex @@ to_tsquery('core.mdr_english_config2', '{search_pars}')) ";
+                scope_string = $" AND (tt_lex @@ to_tsquery('english', '{search_pars}')) ";
             }
             else if (search_scope == 2)
             {
-                scope_string = $" AND (conditions_lex @@ to_tsquery('core.mdr_english_config2', '{search_pars}')) ";
+                scope_string = $" AND (conditions_lex @@ to_tsquery('english', '{search_pars}')) ";
             }
             else if (search_scope == 3)
             {
                 scope_string = $@" AND
-                          (               (tt_lex @@ to_tsquery('core.mdr_english_config2', '{search_pars}')) 
-                              OR  (conditions_lex @@ to_tsquery('core.mdr_english_config2', '{search_pars}')) )";
+                          (               (tt_lex @@ to_tsquery('english', '{search_pars}')) 
+                              OR  (conditions_lex @@ to_tsquery('english', '{search_pars}')) )";
             }
         }
         return scope_string;
@@ -891,8 +891,8 @@ public class StudyRepo : IStudyRepo
                              inner join search.studies_json sj 
                              on lx.study_id = sj.id 
                              where
-                             tt_lex @@ to_tsquery('core.mdr_english_config2', '(bowel & cancer) | (colorectal & cancer)') 
-                             or conditions_lex @@ to_tsquery('core.mdr_english_config2', '(bowel & cancer) | (colorectal & cancer)')
+                             tt_lex @@ to_tsquery('english', '(bowel & cancer) | (colorectal & cancer)') 
+                             or conditions_lex @@ to_tsquery('english', '(bowel & cancer) | (colorectal & cancer)')
                              order by sj.id 
                              offset {offset} limit {limit}
                          ) x";
@@ -907,8 +907,8 @@ public class StudyRepo : IStudyRepo
                              inner join search.studies_json sj 
                              on lx.study_id = sj.id 
                              where
-                             tt_lex @@ to_tsquery('core.mdr_english_config2', 'covid | coronavirus | SARS-2') 
-                             or conditions_lex @@ to_tsquery('core.mdr_english_config2', 'covid | coronavirus | SARS-2')
+                             tt_lex @@ to_tsquery('english', 'covid | coronavirus | SARS-2') 
+                             or conditions_lex @@ to_tsquery('english', 'covid | coronavirus | SARS-2')
                              order by sj.id 
                              offset {offset} limit {limit}
                          ) x";
