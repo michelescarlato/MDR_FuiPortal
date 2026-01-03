@@ -33,7 +33,7 @@ WORKDIR /app
 # Optional: run as non-root (recommended)
 # The aspnet image doesn't always ship with a non-root user, so create one.
 RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
-USER appuser
+USER 1000:1000
 
 # Kestrel will listen on 8080 by default here
 ENV ASPNETCORE_URLS=http://0.0.0.0:8080
