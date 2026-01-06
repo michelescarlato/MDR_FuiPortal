@@ -1,13 +1,18 @@
+using System;
 using MDR_FuiPortal.Server;
 using MDR_FuiPortal.Shared;
 using Microsoft.Fast.Components.FluentUI;
+using OpenTelemetry.Exporter;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
-
-var options = new WebApplicationOptions() { WebRootPath = "wwwroot"};
+var options = new WebApplicationOptions { WebRootPath = "wwwroot" };
 var builder = WebApplication.CreateBuilder(options);
 
-// Add services to the container.
-
+// ------------------------------------------------------------
+// Services
+// ------------------------------------------------------------
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 builder.Services.AddFluentUIComponents();
@@ -15,18 +20,79 @@ builder.Services.AddFluentUIComponents();
 builder.Services.AddSingleton<ICredentials, Credentials>();
 builder.Services.AddSingleton<ILookUpRepo, LookUpRepo>();
 builder.Services.AddSingleton<ITreeRepo, TreeRepo>();
+
 builder.Services.Configure<MailConfigModel>(
     builder.Configuration.GetSection(MailConfigModel.SectionName)
 );
+
 builder.Services.AddScoped<IObjectRepo, ObjectRepo>();
 builder.Services.AddScoped<IStudyRepo, StudyRepo>();
 builder.Services.AddScoped<IMailRepo, MailRepo>();
 
 builder.Services.AddSwaggerGen();
 
+// ------------------------------------------------------------
+// OpenTelemetry (Option A - SDK in code)
+// ------------------------------------------------------------
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(r =>
+    {
+        var serviceName =
+            Environment.GetEnvironmentVariable("OTEL_SERVICE_NAME") ?? "mdr-fuiportal";
+
+        r.AddService(serviceName: serviceName)
+         .AddEnvironmentVariableDetector();
+    })
+    .WithTracing(t =>
+    {
+        t.AddAspNetCoreInstrumentation()
+         .AddHttpClientInstrumentation()
+         .AddOtlpExporter(o =>
+         {
+             var endpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT");
+             if (!string.IsNullOrWhiteSpace(endpoint))
+             {
+                 o.Endpoint = new Uri(endpoint);
+             }
+
+             var proto = (Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_PROTOCOL") ?? "")
+                 .Trim()
+                 .ToLowerInvariant();
+
+             // Default to gRPC if not specified
+             o.Protocol = proto == "http/protobuf"
+                 ? OtlpExportProtocol.HttpProtobuf   // typical for 4318
+                 : OtlpExportProtocol.Grpc;          // typical for 4317
+         });
+    })
+    .WithMetrics(m =>
+    {
+        m.AddAspNetCoreInstrumentation()
+         .AddHttpClientInstrumentation()
+         .AddRuntimeInstrumentation()
+         .AddOtlpExporter(o =>
+         {
+             var endpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT");
+             if (!string.IsNullOrWhiteSpace(endpoint))
+             {
+                 o.Endpoint = new Uri(endpoint);
+             }
+
+             var proto = (Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_PROTOCOL") ?? "")
+                 .Trim()
+                 .ToLowerInvariant();
+
+             o.Protocol = proto == "http/protobuf"
+                 ? OtlpExportProtocol.HttpProtobuf
+                 : OtlpExportProtocol.Grpc;
+         });
+    });
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// ------------------------------------------------------------
+// HTTP pipeline
+// ------------------------------------------------------------
 if (app.Environment.IsDevelopment())
 {
     app.UseWebAssemblyDebugging();
@@ -34,34 +100,11 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 app.UseSwagger();
 app.UseSwaggerUI();
-
-app.UseHttpsRedirection();
-
-/***************************************************************
- From the docs online but so far have not had to implement this...
- The app currentlyu seems to find everything by default.
-
-*Hosted Blazor WebAssembly
-If the app is a hosted Blazor WebAssembly app:
-
-In the Server project (Program.cs):
-Adjust the path of UseBlazorFrameworkFiles (for example, app.UseBlazorFrameworkFiles("/base/path");).
-Configure calls to UseStaticFiles (for example, app.UseStaticFiles("/base/path");).
-In the Client project:
-Configure <StaticWebAssetBasePath> in the project file to match the path for serving static web assets 
-(for example, <StaticWebAssetBasePath>base/path</StaticWebAssetBasePath> ).
-Configure the <base> tag, per the guidance in the Configure the app base path section.
-For an example of hosting multiple Blazor WebAssembly apps in a hosted Blazor WebAssembly solution, 
-see Multiple hosted ASP.NET Core Blazor WebAssembly apps, where approaches are explained for 
-domain/port hosting and subpath hosting of multiple Blazor WebAssembly client apps.
-* 
- ***************************************************************/
 
 app.UseHttpsRedirection();
 
