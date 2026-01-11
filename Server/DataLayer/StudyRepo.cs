@@ -8,7 +8,6 @@ using System.Xml.Linq;
 using ServiceStack;
 using ServiceStack.Text;
 using JsonSerializer = System.Text.Json.JsonSerializer;
-
 namespace MDR_FuiPortal.Server;
 
 public class StudyRepo : IStudyRepo
@@ -16,12 +15,14 @@ public class StudyRepo : IStudyRepo
     private readonly string _dbConnString;
     private readonly string _aggsConnString;
     private readonly ILookUpRepo _lookUpRepo;
+    private readonly ILogger<StudyRepo> _logger;
 
-    public StudyRepo(ICredentials creds, ILookUpRepo lookUpRepo)
+    public StudyRepo(ICredentials creds, ILookUpRepo lookUpRepo, ILogger<StudyRepo> logger)
     {
         _lookUpRepo = lookUpRepo;
         _dbConnString = creds.GetConnectionString("mdr");
         _aggsConnString = creds.GetConnectionString("aggs");
+        _logger = logger;
     }
 
 
@@ -633,6 +634,7 @@ public class StudyRepo : IStudyRepo
         catch (Exception e)
         {
             var s = e.Message;
+            _logger.LogError(e, "GetTotalStudiesAndObjectsAsync failed");
             return new Dictionary<string, long>()
             {
                 {"studiesCount", 0},
