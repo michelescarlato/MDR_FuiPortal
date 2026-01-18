@@ -46,46 +46,15 @@ builder.Services.AddOpenTelemetry()
     .WithTracing(t =>
     {
         t.AddAspNetCoreInstrumentation()
-         .AddHttpClientInstrumentation()
-         .AddOtlpExporter(o =>
-         {
-             var endpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT");
-             if (!string.IsNullOrWhiteSpace(endpoint))
-             {
-                 o.Endpoint = new Uri(endpoint);
-             }
-
-             var proto = (Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_PROTOCOL") ?? "")
-                 .Trim()
-                 .ToLowerInvariant();
-
-             // Default to gRPC if not specified
-             o.Protocol = proto == "http/protobuf"
-                 ? OtlpExportProtocol.HttpProtobuf   // typical for 4318
-                 : OtlpExportProtocol.Grpc;          // typical for 4317
-         });
+            .AddHttpClientInstrumentation()
+            .AddOtlpExporter();
     })
     .WithMetrics(m =>
     {
         m.AddAspNetCoreInstrumentation()
-         .AddHttpClientInstrumentation()
-         .AddRuntimeInstrumentation()
-         .AddOtlpExporter(o =>
-         {
-             var endpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT");
-             if (!string.IsNullOrWhiteSpace(endpoint))
-             {
-                 o.Endpoint = new Uri(endpoint);
-             }
-
-             var proto = (Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_PROTOCOL") ?? "")
-                 .Trim()
-                 .ToLowerInvariant();
-
-             o.Protocol = proto == "http/protobuf"
-                 ? OtlpExportProtocol.HttpProtobuf
-                 : OtlpExportProtocol.Grpc;
-         });
+            .AddHttpClientInstrumentation()
+            .AddRuntimeInstrumentation()
+            .AddOtlpExporter();
     });
 
 var app = builder.Build();
