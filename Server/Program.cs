@@ -6,9 +6,13 @@ using OpenTelemetry.Exporter;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using System.Diagnostics;
+
 
 var options = new WebApplicationOptions { WebRootPath = "wwwroot" };
 var builder = WebApplication.CreateBuilder(options);
+var source = new ActivitySource("mdr-fuiportal.startup");
+builder.Services.AddSingleton(source);
 
 // ------------------------------------------------------------
 // Services
@@ -45,7 +49,8 @@ builder.Services.AddOpenTelemetry()
     })
     .WithTracing(t =>
     {
-        t.AddAspNetCoreInstrumentation()
+        t.AddSource("mdr-fuiportal.startup")
+            .AddAspNetCoreInstrumentation()
             .AddHttpClientInstrumentation()
             .AddOtlpExporter();
     })
@@ -58,6 +63,12 @@ builder.Services.AddOpenTelemetry()
     });
 
 var app = builder.Build();
+var src = app.Services.GetRequiredService<ActivitySource>();
+using (var activity = src.StartActivity("startup-test"))
+{
+    activity?.SetTag("test", true);
+}
+
 
 // ------------------------------------------------------------
 // HTTP pipeline
